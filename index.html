@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
-  <title>Dora-e-Quran 2026 Quiz</title>
+  <title>Dora-e-Quran Quiz</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -96,13 +96,13 @@
   </div>
 
 <script>
-  // ---------- Get quiz number from URL ----------
-  const urlParams = new URLSearchParams(window.location.search);
-  const quizNo = urlParams.get('quiz') || "1";
+  // quiz number from URL query string, default = 1
+  const params = new URLSearchParams(window.location.search);
+  const quizNo = params.get("quiz") || "1";
 
-  // ---------- CNIC formatting ----------
   function formatCNIC(el){
     let digits = el.value.replace(/\D/g, '');
+
     if(digits.length <= 5){
       el.value = digits;
     } else if(digits.length <= 12){
@@ -112,7 +112,6 @@
     }
   }
 
-  // ---------- Submit CNIC ----------
   function submitCNIC(){
     const cnic = document.getElementById("cnic").value.trim();
     const msg = document.getElementById("msg");
@@ -127,30 +126,27 @@
 
     spin.style.display = "block";
 
-    // Call Apps Script function
-    google.script.run.withSuccessHandler(res => {
-      spin.style.display = "none";
+    // <<<<< Your Apps Script Web App URL >>>>>
+    const scriptUrl = "https://script.google.com/macros/s/AKfycbxQTpxMm1Z-uaAf31cdg_ZCEU7mXno0PFVp5rWR63XaH8eKspM45vKOtJP8XGDo3JDh8g/exec";
 
-      if(res.status === "not_registered") {
-        msg.innerText = "You are not registered.";
-      } 
-      else if(res.status === "already_attempted") {
-        msg.innerText = "You have already attempted this quiz.";
-      } 
-      else if(res.status === "allowed") {
-        const a = document.createElement("a");
-        a.href = res.quizUrl;
-        a.target = "_blank";
-        a.rel = "noopener";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      }
-      else {
-        msg.innerText = "Unexpected error. Try again.";
-      }
-    }).checkQuizEligibility(cnic, quizNo);
+    fetch(`${scriptUrl}?cnic=${encodeURIComponent(cnic)}&quiz=${quizNo}`)
+      .then(response => response.json())
+      .then(res => {
+        spin.style.display = "none";
+
+        if(res.status === "not_registered") msg.innerText = "You are not registered.";
+        else if(res.status === "already_attempted") msg.innerText = "You have already attempted this quiz.";
+        else if(res.status === "allowed"){
+          window.open(res.quizUrl, "_blank");
+        } else msg.innerText = "Unexpected error. Try again.";
+      })
+      .catch(err => {
+        spin.style.display = "none";
+        msg.innerText = "Server error. Try again.";
+        console.error(err);
+      });
   }
 </script>
+
 </body>
 </html>
