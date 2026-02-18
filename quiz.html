@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dora-e-Quran 2026 Quiz</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      background: #fff;
+      padding: 40px;
+      border-radius: 15px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      text-align: center;
+      width: 350px;
+    }
+    img.header-image {
+      width: 120px;
+      margin-bottom: 20px;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0 20px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      width: 100%;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #msg {
+      color: red;
+      margin-top: 10px;
+      min-height: 20px;
+    }
+    .spinner {
+      display: none;
+      margin: 20px auto 0 auto;
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #4CAF50;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .title {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+    .subtitle {
+      margin: 6px 0 15px 0;
+      font-size: 16px;
+      font-weight: 500;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2 class="title">Quiz</h2>
+    <p class="subtitle">Dora-e-Quran 2026</p>
+
+    <img class="header-image"
+         src="https://drive.google.com/thumbnail?id=1ibvn70A1a2WwQ5hrytdgIL2Jx7eWb4Y-&sz=w600"
+         alt="Logo">
+
+    <p style="font-weight:600; margin-bottom:8px;">Enter your CNIC</p>
+    <input type="text" id="cnic" placeholder="12345-1234567-1" maxlength="15" oninput="formatCNIC(this)">
+
+    <button onclick="submitCNIC()">Submit</button>
+    <p id="msg"></p>
+    <div class="spinner" id="spin"></div>
+  </div>
+
+<script>
+  // ---------- Get quiz number from URL ----------
+  const urlParams = new URLSearchParams(window.location.search);
+  const quizNo = urlParams.get('quiz') || "1";
+
+  // ---------- CNIC formatting ----------
+  function formatCNIC(el){
+    let digits = el.value.replace(/\D/g, '');
+    if(digits.length <= 5){
+      el.value = digits;
+    } else if(digits.length <= 12){
+      el.value = digits.slice(0,5) + '-' + digits.slice(5);
+    } else {
+      el.value = digits.slice(0,5) + '-' + digits.slice(5,12) + '-' + digits.slice(12,13);
+    }
+  }
+
+  // ---------- Submit CNIC ----------
+  function submitCNIC(){
+    const cnic = document.getElementById("cnic").value.trim();
+    const msg = document.getElementById("msg");
+    const spin = document.getElementById("spin");
+
+    msg.innerText = "";
+
+    if(!/^\d{5}-\d{7}-\d{1}$/.test(cnic)){
+      msg.innerText = "CNIC format must be 12345-1234567-1";
+      return;
+    }
+
+    spin.style.display = "block";
+
+    // Call Apps Script function
+    google.script.run.withSuccessHandler(res => {
+      spin.style.display = "none";
+
+      if(res.status === "not_registered") {
+        msg.innerText = "You are not registered.";
+      } 
+      else if(res.status === "already_attempted") {
+        msg.innerText = "You have already attempted this quiz.";
+      } 
+      else if(res.status === "allowed") {
+        const a = document.createElement("a");
+        a.href = res.quizUrl;
+        a.target = "_blank";
+        a.rel = "noopener";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+      else {
+        msg.innerText = "Unexpected error. Try again.";
+      }
+    }).checkQuizEligibility(cnic, quizNo);
+  }
+</script>
+</body>
+</html>
